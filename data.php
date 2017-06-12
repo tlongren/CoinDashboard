@@ -5,9 +5,11 @@ header('Content-type: application/json');
 $failureOutput = json_encode((object)['status' => 'failed'], JSON_PRETTY_PRINT);
 
 $coins = [
-    // Investment, Balance
-    'ETH'  => [25, 0.50],
-    'NLG'  => [150, 4000]
+    // [Currency, [Investment, Balance]]
+    ['ETH', [25, 0.50]],
+    ['ETH', [30, 0.40]],
+    ['NLG', [150, 4000]],
+    ['NLG', [200, 2500]]
 ];
 
 $apiUrl = 'https://api.coinmarketcap.com/v1/ticker/?convert=EUR';
@@ -25,14 +27,14 @@ if (json_last_error() !== JSON_ERROR_NONE) {
 }
 
 $parsedData = array_filter($parsedData, function($coin) use ($coins): bool {
-    return array_key_exists($coin->symbol, $coins);
+    return in_array($coin->symbol, array_column($coins, 0));
 });
 
 $parsedData = array_combine(array_column($parsedData, 'symbol'), $parsedData);
 
 $returnData = [];
 
-foreach ($coins as $symbol => list($investment, $balance)) {
+foreach ($coins as list($symbol, list($investment, $balance))) {
     $returnData[] = [
         'investment' => $investment,
         'symbol' => $symbol,
