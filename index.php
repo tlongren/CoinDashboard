@@ -35,7 +35,6 @@
 
         table tr td,
         table tr th {
-            border-left: 2px solid rgba(255, 255, 255, 0.5);
             padding: 1.5rem;
         }
 
@@ -46,6 +45,10 @@
 
         table th {
             border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+        }
+
+        table tr:last-child td {
+            border-top: 2px solid rgba(255, 255, 255, 0.5);
         }
 
         table .num {
@@ -105,8 +108,13 @@
                 margin-bottom: 1rem;
             }
 
+            table tr td span {
+                display: none;
+            }
+
             table tr td[data-field="Symbol"]::before,
-            table tr td[data-field="Value"]::before {
+            table tr td[data-field="Value"]::before,
+            table tr td[data-field="Profit"]::before {
                 display: none;
             }
 
@@ -127,18 +135,30 @@
                 width: 36%;
             }
 
+            table tr td[data-field="Invested"],
             table tr td[data-field="1 hr"],
             table tr td[data-field="24 hrs"],
             table tr td[data-field="7 days"] {
                 background: rgba(255, 255, 255, 0.1);
                 font-size: 1.2rem;
-                width: 33.33%
+                width: 25%
             }
 
             table tr td[data-field="1 hr"].neg,
             table tr td[data-field="24 hrs"].neg,
             table tr td[data-field="7 days"].neg {
                 color: #ff8e93;
+            }
+
+            table tr.total td {
+                border-top: 0;
+            }
+
+            table tr.total td[data-field="Invested"],
+            table tr.total td[data-field="1 hr"],
+            table tr.total td[data-field="24 hrs"],
+            table tr.total td[data-field="7 days"] {
+                display: none;
             }
         }
     </style>
@@ -179,45 +199,67 @@
             data = JSON.parse(data);
 
             var container = document.createElement('table');
+            var totalValue = 0.0;
+            var totalInvestment = 0.0;
 
             container.appendChild(tableRow([
               ['', '', 'Symbol'],
-              ['', '', 'Value'],
               ['', '', 'Profit'],
+              ['', '', 'Value'],
+              ['', '', 'Invested'],
               ['', '', '1 hr'],
               ['', '', '24 hrs'],
               ['', '', '7 days']
             ], true));
 
             data.forEach(function(coin) {
+              totalValue += coin.value;
+              totalInvestment += coin.investment;
+
               container.appendChild(tableRow([
                 ['text', 'Symbol', coin.symbol],
-                ['currency', 'Value', coin.value.toFixed(2)],
-                ['percentage', 'Value', ((coin.value - coin.investment) / coin.investment) * 100],
+                ['percentage', 'Profit', ((coin.value - coin.investment) / coin.investment) * 100],
+                ['currency', 'Value', coin.value],
+                ['currency', 'Invested', coin.investment],
                 ['percentage', '1 hr', coin.change['1hr']],
                 ['percentage', '24 hrs', coin.change['24hr']],
                 ['percentage', '7 days', coin.change['7d']]
-              ], false))
+              ], false));
             });
+
+            container.appendChild(tableRow([
+              ['text', 'Symbol', 'TOTAL'],
+              ['percentage', 'Profit', (totalValue - totalInvestment) / totalInvestment * 100],
+              ['currency', 'Value', totalValue],
+              ['currency', 'Invested', totalInvestment],
+              ['', '1 hr', ''],
+              ['', '24 hrs', ''],
+              ['', '7 days', '']
+            ], false, 'total'));
 
             element.innerHTML = '';
             element.style.background = 'none';
             element.appendChild(container);
           }
 
-          function tableRow(values, isHeader = false) {
+          function tableRow(values, isHeader = false, additionalClass = '') {
             var row = document.createElement('tr');
+
+            if (additionalClass !== '') {
+              row.classList.add(additionalClass);
+            }
 
             var cell = document.createElement(isHeader ? 'th' : 'td');
 
             values.forEach(function(value) {
               var el = cell.cloneNode(false);
+
               el.setAttribute('data-field', value[1]);
 
               switch(value[0]) {
                 case 'currency':
                   el.classList.add('num');
-                  el.innerHTML = '&euro;&nbsp;' + value[2];
+                  el.innerHTML = '&euro;&nbsp;' + value[2].toFixed(2);
                   break;
                 case 'percentage':
                   el.classList.add('num');
@@ -237,7 +279,7 @@
 
           function percentage(value) {
             value = parseFloat(value);
-            return parseFloat(value) > 0 ? '+&nbsp;' + value.toFixed(2) + '%' : '-&nbsp;' + Math.abs(value.toFixed(2)) + '%';
+            return parseFloat(value) > 0 ? '<span>+&nbsp;</span>' + value.toFixed(2) + '%' : '<span>-&nbsp;</span>' + Math.abs(value.toFixed(2)) + '%';
           }
 
           function pause() {
