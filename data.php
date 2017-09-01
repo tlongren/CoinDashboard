@@ -26,7 +26,7 @@ if (json_last_error() !== JSON_ERROR_NONE) {
     die($failureOutput);
 }
 
-$parsedData = array_filter($parsedData, function($coin) use ($coins): bool {
+$parsedData = array_filter($parsedData, function($coin) use ($coins) {
     return in_array($coin->symbol, array_column($coins, 0));
 });
 
